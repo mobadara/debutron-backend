@@ -3,16 +3,14 @@ from pydantic import BaseModel, EmailStr, Field, field_serializer, field_validat
 from typing import Literal, Optional
 from datetime import datetime
 
-
 class NotificationPreferences(BaseModel):
-    """Represents notification preferences for a student.
-    """
-    pass
-
+    """Represents notification preferences for a student."""
+    email_alerts_grades: bool = True
+    email_alerts_receipts: bool = True
+    sms_alerts_schedule: bool = False
 
 class Sponsor(Document):
-    """Represents the finiacial sponsor for a student, with fields for contact details.
-    """
+    """Represents the financial sponsor for a student, with fields for contact details."""
     title: str
     full_name: str
     email: Indexed(EmailStr, unique=True) # type: ignore
@@ -21,10 +19,11 @@ class Sponsor(Document):
     organization: Optional[str] = None
     relationship_to_student: Optional[str] = None
     
-    
+    class Settings:
+        name = "sponsors"
+
 class ParentGuardian(Document):
-    """Represents the parent or guardian of a student, with fields for contact details.
-    """
+    """Represents the parent or guardian of a student, with fields for contact details."""
     title: str
     full_name: str
     email: Indexed(EmailStr, unique=True) # type: ignore
@@ -32,28 +31,24 @@ class ParentGuardian(Document):
     full_address: str
     relationship_to_student: Optional[str] = None
     
+    class Settings:
+        name = "parents_guardians"
 
 class NextOfKin(Document):
-    """Represents the next of kin for a student, with fields for contact details.
-    """
+    """Represents the next of kin for a student, with fields for contact details."""
     title: str
     full_name: str
     email: Indexed(EmailStr, unique=True) # type: ignore
     phone_number: str
     full_address: str
     relationship_to_student: Optional[str] = None
+    
+    class Settings:
+        name = "next_of_kin"
 
 
 class Student(Document):
-    """Represents a student in the system, with fields for personal information and authentication details.
-    
-    This class defines the structure of the student document in the MongoDB database, including
-    indexed fields for efficient querying. It includes fields for email, password, name, and
-    timestamps for account creation and updates.
-    
-    Attributes:
-        
-    """
+    """Represents a student in the system, with fields for personal information and authentication details."""
     student_id: Indexed(str, unique=True) # type: ignore
     
     first_name: str
@@ -61,9 +56,11 @@ class Student(Document):
     email: Indexed(EmailStr, unique=True) # type: ignore
     middle_name: Optional[str] = None
     hashed_password: str
-    enroled_track: Literal['A', 'T']
-    study_mode: Literal['O', 'S'] = Field(default='NA') # type: ignore
-    hardware_requirement: Literal['Y', 'N'] = Field(default='NA') # type: ignore
+    
+    # Updated Literals to accept 'NA'
+    enroled_track: Literal['A', 'T', 'NA'] = Field(default='NA')
+    study_mode: Literal['O', 'S', 'NA'] = Field(default='NA') 
+    hardware_requirement: Literal['Y', 'N', 'NA'] = Field(default='NA') 
     
     sex: Literal['M', 'F']
     phone_number: str
@@ -72,12 +69,10 @@ class Student(Document):
     state: str
     country: str
     
-    name_of_secondary_school: Field(default='NA') # type: ignore
-    year_of_graduation: Field(default='NA') # type: ignore
-    
-    
-    highest_qualification: Optional[str] = Field(default='NA') # type: ignore
-    
+    # Fixed Missing Type Annotations (str)
+    secondary_school: str = Field(default='NA') 
+    graduation_year: str = Field(default='NA') 
+    highest_qualification: str = Field(default='NA') 
     
     core_strength: Optional[str] = None
     areas_of_improvement: Optional[str] = None
@@ -90,17 +85,13 @@ class Student(Document):
     academic_reference_letter_url: Optional[str] = None
     o_level_result_url: Optional[str] = None
     
-    
     preferences: NotificationPreferences = Field(default_factory=NotificationPreferences)
     
     requires_high_contrast: bool = False
-    bio: Optional[str] = None
-    github_url: Optional[str] = None
-    twitter_url: Optional[str] = None
-    linkedin_url: Optional[str] = None
     
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    is_active: bool = True
+    sponsor: Optional[Link[Sponsor]] = None
+    parent_guardian: Optional[Link[ParentGuardian]] = None
+    next_of_kin: Optional[Link[NextOfKin]] = None
 
     @field_validator('sex', mode='before')
     @classmethod
